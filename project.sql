@@ -132,7 +132,7 @@ group by movie_id
 order by avg_rating desc;
 
 -- View that gives the most liked movies out of all the movies.
-create view mosted_liked_movies as
+create view most_liked_movies as
 select
     movie.movie_id,
     movie.title,
@@ -162,7 +162,7 @@ select
     avg(rating.rating_level) as avg_director_rating,
     count(rating.rating_id) as total_ratings
 from director
-join movie_director on director.director_id = movie_director.movie_id
+join movie_director on director.director_id = movie_director.director_id
 join rating on movie_director.movie_id = rating.movie_id
 group by director.director_id
 order by avg_director_rating;
@@ -180,8 +180,51 @@ create trigger rating_level_range
         end$$
 delimiter ;
 
+-- Trigger that will activate when a user updates a rating outside of range of 1-10.
+delimiter $$
+create trigger rating_level_range_update
+    before update on rating
+    for each row
+        begin
+            if new.rating_level < 1 or new.rating_level > 10 then
+                signal sqlstate '45000'
+                set message_text = 'Rating must be between 1 and 10';
+            end if;
+        end$$
+delimiter ;
 
+-- Trigger that will remove a favorite when a movie is unliked.
+delimiter $$
+create trigger remove_favorite_when_unliked
+    after delete on likes
+    for each row
+        begin
+            delete from favorites
+            where user_id = old.user_id and
+            movie_id = old.movie_id;
+        end$$
+delimiter ;
 
+-- Trigger that will delete all favorites from a user if the profile is deleted.
+delimiter $$
+create trigger delete_favorites_from_user
+    after delete on user_info
+    for each row
+        begin
+            delete from favorites
+            where user_id = old.user_id;
+        end$$
+delimiter ;
 
-
-
+-- Stored procedure to add a user to the database.
+delimiter $$
+create procedure add_user(
+    in procedure_username varchar(50),
+    in procedure_first_name varchar(50),
+    in procedure_last_name varchar(50)
+)
+    begin
+        insert into user_info(username, first_name, last_name)
+        values (procedure_username, procedure_first_name, procedure_last_name)
+    end$$
+delimiter ;
