@@ -131,6 +131,41 @@ join movie on movie.movie_id = rating.movie_id
 group by movie_id
 order by avg_rating desc;
 
+-- View that gives the most liked movies out of all the movies.
+create view mosted_liked_movies as
+select
+    movie.movie_id,
+    movie.title,
+    count(likes.user_id) as like_count
+from movie
+join likes on movie.movie_id = likes.movie_id
+group by movie.movie_id
+order by like_count desc;
+
+-- View that gives the most favorited movies out of all the movies.
+create view most_favorited_movies as
+select
+    movie.movie_id,
+    movie.title,
+    count(favorites.user_id) as favorites_count
+from movie
+join favorites on movie.movie_id = favorites.movie_id
+group by movie.movie_id
+order by favorites_count desc;
+
+-- View that gives the average rating per director.
+create view average_director_rating as
+select
+    director.director_id,
+    director.first_name,
+    director.last_name,
+    avg(rating.rating_level) as avg_director_rating,
+    count(rating.rating_id) as total_ratings
+from director
+join movie_director on director.director_id = movie_director.movie_id
+join rating on movie_director.movie_id = rating.movie_id
+group by director.director_id
+order by avg_director_rating;
 
 -- Trigger that will activate when a user does not insert a rating number in range of 1-10.
 delimiter $$
